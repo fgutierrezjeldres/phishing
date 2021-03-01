@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Proyecto | Red Neuronal</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta content="" name="entrega resultados obtenidos de una red neuronal..."/>
+    <meta content="" name="F. Gutierrez Jeldres" />
+    <!-- ================== BEGIN BASE CSS STYLE ================== -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700"
+      rel="stylesheet"
+    />
+    <link href="../static/css/default/app.min.css" rel="stylesheet" />
+    <!-- ================== END BASE CSS STYLE ================== -->
+    <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link
+      href="../static/plugins/datatables.net-bs4/css/dataTables.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="../static/plugins/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="../static/plugins/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+  </head>
+  <body>
+    <!-- begin #page-loader -->
+    <div id="page-loader" class="fade show">
+      <span class="spinner"></span>
+    </div>
+    <!-- end #page-loader -->
+    <!-- begin #page-container -->
+    <div id="page-container" class="fade in page-sidebar-fixed page-header-fixed">
+      <!-- begin #header -->
+        <div id="header" class="header navbar-default">
+        <!-- begin navbar-header -->
+            <div class="navbar-header">
+                <a href="#" class="navbar-brand"><span class="navbar-logo"></span> <b>Alimentacion de Datos</b>&nbsp; Carga Archivo</a>
+            </div>
+        </div>
+    	<!-- begin panel -->
+      <div id="content" class="content">
+        <div>
+      <div class="row">
+        <div class="col-lg-10">
+					<div class="panel panel-inverse" data-sortable-id="form-validation-1">
+						<!-- begin panel-heading -->
+						<div class="panel-heading">
+							<h4 class="panel-title">Ingreso Archivos</h4>
+						</div>
+						<!-- end panel-heading -->
+						<!-- begin panel-body -->
+						<div class="panel-body">
+							<form class="form-horizontal" data-parsley-validate="true" name="demo-form" action="/generacion_dataset" method="POST" enctype="multipart/form-data">
+								<div class="form-group row m-b-15">
+									<label class="col-md-4 col-sm-4 col-form-label" for="phishing">Mbox Pishing</label>
+									<div class="col-md-8 col-sm-8">
+										<input class="form-control" type="file" id="phishing" name="pishing" placeholder="Requerido" data-parsley-required="true" />
+									</div>
+								</div>
+                <div class="form-group row m-b-15">
+									<label class="col-md-4 col-sm-4 col-form-label" for="phishing"> Mbox No Pishing</label>
+									<div class="col-md-8 col-sm-8">
+										<input class="form-control" type="file" id="phishing" name="nopishing" placeholder="Requerido" data-parsley-required="true" />
+									</div>
+								</div>
+								<div class="form-group row m-b-0">
+									<label class="col-md-4 col-sm-4 col-form-label">&nbsp;</label>
+									<div class="col-md-8 col-sm-8">
+										<button type="submit" class="btn btn-primary">Subir</button>
+									</div>
+								</div>
+							</form>
+						</div>
+						<!-- end panel-body -->
+					</div>
+        </div>
+    </div>
+     </div>
+    </div>
+    </div>
+    </div>
+    <!-- ================== BEGIN BASE JS ================== -->
+    <script src="../static/js/app.min.js"></script>
+    <script src="../static/js/theme/default.min.js"></script>
+    <!-- ================== END BASE JS ================== -->
+    <!-- ================== BEGIN PAGE LEVEL JS ================== -->
+    <script src="../static/plugins/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="../static/plugins/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="../static/plugins/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons-bs4/js/buttons.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.colVis.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.flash.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.html5.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.print.min.js"></script>
+    <script src="../static/plugins/pdfmake/build/pdfmake.min.js"></script>
+    <script src="../static/plugins/pdfmake/build/vfs_fonts.js"></script>
+    <script src="../static/plugins/jszip/dist/jszip.min.js"></script>
+    <script src="../static/js/demo/table-manage-buttons.demo.js"></script>
+    <script src="../static/plugins/chart.js/dist/Chart.min.js"></script>
+    </body>
+</html>

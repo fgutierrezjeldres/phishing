@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Proyecto | Red Neuronal</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <meta content="" name="entrega resultados obtenidos de una red neuronal..."/>
+    <meta content="" name="F. Gutierrez Jeldres" />
+    <!-- ================== BEGIN BASE CSS STYLE ================== -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700"
+      rel="stylesheet"
+    />
+    <link href="../static/css/default/app.min.css" rel="stylesheet" />
+    <!-- ================== END BASE CSS STYLE ================== -->
+    <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link
+      href="../static/plugins/datatables.net-bs4/css/dataTables.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="../static/plugins/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="../static/plugins/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css"
+      rel="stylesheet"
+    />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+  </head>
+  <body>
+    <!-- begin #page-loader -->
+    <div id="page-loader" class="fade show">
+      <span class="spinner"></span>
+    </div>
+    <!-- end #page-loader -->
+    <!-- begin #page-container -->
+    <div
+      id="page-container"
+      class="fade in page-sidebar-fixed page-header-fixed"
+    >
+      <!-- begin #header -->
+      <div id="header" class="header navbar-default">
+        <!-- begin navbar-header -->
+        <div class="navbar-header">
+          <a href="#" class="navbar-brand"
+            ><span class="navbar-logo"></span> <b>Resultados</b>&nbsp; Red
+            Neuronal</a
+          >
+        </div>
+      </div>
+      <div id="content" class="content">
+        <h1 class="page-header">Entrenamiento</h1>
+        <!-- end page-header -->
+        <!-- begin row -->
+        <div class="row">
+          <div class="col-xl-10">
+            <div class="panel panel-inverse" data-sortable-id="chart-js-1">
+              <div class="panel-heading">
+                <h4 class="panel-title">historial</h4>
+              </div>
+              <div class="panel-body">
+                <p>
+                  Muestra el historial de precision y perdida del entrenamiento
+                  realizado por la red neuronal.
+                </p>
+                <div>
+                  <canvas id="line-chart" data-render="chart-js"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h1 class="page-header">Evaluacion de Precision</h1>
+        <div class="row row-space-10 m-b-20">
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-blue m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">Precision</div>
+                <div class="stats-number">{{resultado.test_acc}}</div>
+                <div class="stats-desc">test accuracy</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-red m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">Perdida</div>
+                <div class="stats-number">{{resultado.test_loss}}</div>
+                <div class="stats-desc">test loss</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h1 class="page-header">Matriz de Confusion</h1>
+        <div class="row row-space-10 m-b-20">
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-blue m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">TP</div>
+                <div class="stats-number">{{resultado.snn_cm[0][0]}}</div>
+                <div class="stats-desc">Verdadero Postivo</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-blue m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">FP</div>
+                <div class="stats-number">{{resultado.snn_cm[0][1]}}</div>
+                <div class="stats-desc">Falso Positivo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row row-space-10 m-b-20">
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-red m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">FN</div>
+                <div class="stats-number">{{resultado.snn_cm[1][0]}}</div>
+                <div class="stats-desc">Falso Negativo</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5 col-sm-5">
+            <div class="widget widget-stats bg-gradient-red m-b-10">
+              <div class="stats-icon stats-icon-lg"></div>
+              <div class="stats-content">
+                <div class="stats-title">TN</div>
+                <div class="stats-number">{{resultado.snn_cm[1][1]}}</div>
+                <div class="stats-desc">Verdadero Negativo</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="row">
+            <div class="col-lg-10">
+              <h1 class="page-header">Historial de Precision</h1>
+              <div class="panel panel-inverse">
+                <div class="panel-heading">
+                  <h4 class="panel-title">...</h4>
+                </div>
+                <div class="alert alert-warning fade show">
+                  <button type="button" class="close" data-dismiss="alert">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                  muestra la precision de la red neuronal previamente ejecutada.
+                </div>
+                <!-- end alert -->
+                <!-- begin panel-body -->
+                <div class="panel-body">
+                  <table
+                    id="data-table-buttons"
+                    class="table table-striped table-bordered table-td-valign-middle"
+                  >
+                    <thead>
+                      <tr>
+                        <th width="1%">#</th>
+                        <th class="text-nowrap">Normal</th>
+                        <th class="text-nowrap">Phishing</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for elemento in resultado.prediccion %}
+                      <tr class="odd gradeX">
+                        <td width="1%" class="f-w-600 text-inverse">
+                          {{loop.index}}
+                        </td>
+                        <td>{{elemento[0]}}</td>
+                        <td>{{elemento[1]}}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <!-- end panel-body -->
+              </div>
+              <!-- end panel -->
+            </div>
+            <!-- end col-10 -->
+          </div>
+        </div>
+        <!-- end #content -->
+        <div>
+          <div class="col-lg-10">
+            <div class="panel panel-inverse" data-sortable-id="ui-typography-8">
+              <div class="panel-heading">
+                <h4 class="panel-title">Reporte de Clasificacion</h4>
+              </div>
+              <div class="panel-body">
+                <p class="space-above" style="white-space: pre-wrap">
+                  <strong>{{ resultado.snn_report }}</strong>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ================== BEGIN BASE JS ================== -->
+    <script src="../static/js/app.min.js"></script>
+    <script src="../static/js/theme/default.min.js"></script>
+    <!-- ================== END BASE JS ================== -->
+    <!-- ================== BEGIN PAGE LEVEL JS ================== -->
+    <script src="../static/plugins/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="../static/plugins/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
+    <script src="../static/plugins/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/dataTables.buttons.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons-bs4/js/buttons.bootstrap4.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.colVis.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.flash.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.html5.min.js"></script>
+    <script src="../static/plugins/datatables.net-buttons/js/buttons.print.min.js"></script>
+    <script src="../static/plugins/pdfmake/build/pdfmake.min.js"></script>
+    <script src="../static/plugins/pdfmake/build/vfs_fonts.js"></script>
+    <script src="../static/plugins/jszip/dist/jszip.min.js"></script>
+    <script src="../static/js/demo/table-manage-buttons.demo.js"></script>
+    <script src="../static/plugins/chart.js/dist/Chart.min.js"></script>
+
+    <!-- ================== END PAGE LEVEL JS ================== -->
+
+    <script>
+              Chart.defaults.global.defaultFontColor = COLOR_DARK;
+              Chart.defaults.global.defaultFontFamily = FONT_FAMILY;
+              Chart.defaults.global.defaultFontStyle = FONT_WEIGHT;
+              var lineChartData = {
+                labels: ['0', '200', '400', '600', '800', '1000'],
+                datasets: [{
+                  label: 'Precision',
+                  borderColor: COLOR_BLUE,
+                  pointBackgroundColor: COLOR_BLUE,
+                  pointRadius: 2,
+                  borderWidth: 2,
+                  backgroundColor: COLOR_BLUE_TRANSPARENT_3,
+                  data:{{resultado.data_accuracy}}
+                }, {
+                  label: 'Error',
+                  borderColor: COLOR_DARK_LIGHTER,
+                  pointBackgroundColor: COLOR_DARK,
+                  pointRadius: 2,
+                  borderWidth: 2,
+                  backgroundColor: COLOR_DARK_TRANSPARENT_3,
+                  data: {{resultado.data_loss}}
+              }
+              ]};
+      var handleChartJs = function() {
+      	var ctx = document.getElementById('line-chart').getContext('2d');
+      	var lineChart = new Chart(ctx, {
+      		type: 'line',
+      		data: lineChartData
+      	});
+      };
+
+      var ChartJs = function () {
+      	"use strict";
+      	return {
+      		//main function
+      		init: function () {
+      			handleChartJs();
+      		}
+      	};
+      }();
+
+      $(document).ready(function() {
+      	ChartJs.init();
+      });
+    </script>
+  </body>
+</html>
+<!--
+
+data: [accuracy.forEach(function(elemento,indice,array){
+                    elemento
+                    console.log('elemento ',elemento)
+                  })]
+
+-->

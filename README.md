@@ -21,5 +21,5 @@ para la deteccion de los posibles ataques phishing se uso mediante codigo python
 •	Hexadecimal
 •	Hiperlink de Imagenes
 
-este proyecto genera un archivo dataset de evaluacion y mediante una red neuronal se evalua la precision de este archivo.
+este proyecto genera un archivo dataset de evaluacion y mediante una red neuronal se evalua la precision del algoritmo de deteccion de phishing.
 para poder desarrollar este proyecto se baso en lo desarollado en este proyecto "https://github.com/diegoocampoh/MachineLearningPhishing" y los datos de pruebas fueron obtenidos en esta pagina "https://monkey.org/~jose/phishing/"

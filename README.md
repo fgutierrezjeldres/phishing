@@ -1,6 +1,4 @@
-![Phishing](https://user-images.githubusercontent.com/5145097/112899719-e4169700-90b8-11eb-9183-30e1d6b41fc6.PNG)
-![Uploading Phishing.PNG…]()
-# phishing
+
 
 proyecto que permite detectar y clasificar caracteristicas que posean phishing dentro de un correo electronico corporativo y posteriormente evaluar mediantes algoritmos de aprendizaje la precision que entrega estos algoritmos.
 
@@ -29,4 +27,4 @@ para poder desarrollar este proyecto se baso en lo desarollado en este proyecto 
 
 DIAGRAMA DE CLASES.
 este diagrama solo  muestra 3 de las 17 clases que determina las caracteristicas, con el fin de mostrar el diagrama.
-
+![Phishing](https://user-images.githubusercontent.com/5145097/112899719-e4169700-90b8-11eb-9183-30e1d6b41fc6.PNG)

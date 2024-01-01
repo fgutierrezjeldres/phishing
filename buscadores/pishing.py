@@ -94,15 +94,18 @@ class ActionWord(Buscador):
         titulo = 'Llamada de Accion'
         return titulo
     
-    def getBuscador(self, mensaje):
+    def getBuscador(self, mensaje, umbral = 3):
         super(ActionWord, self).getBuscador(mensaje)
         correo =  utilidades.getDatos(mensaje).lower()
         retorno = 0
+        palabras_encontradas = []
         for palabra in constantes.PALABRAS:
             if re.search(palabra, correo):
                 retorno += 1
+                palabras_encontradas.append(palabra)
+                
         #return retorno       
-        if retorno > 0:
+        if retorno >= umbral:
             return constantes.VERDADERO
         else:
             return constantes.FALSO  

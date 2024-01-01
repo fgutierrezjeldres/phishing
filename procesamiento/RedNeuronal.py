@@ -8,6 +8,7 @@ from tensorflow  import keras
 from sklearn.metrics import classification_report,confusion_matrix
 from sklearn.model_selection import train_test_split
 from tabulate import tabulate
+from sklearn.preprocessing import MinMaxScaler
 
 
 
@@ -20,34 +21,41 @@ class RedNeuronal:
         datos = pd.read_csv(self.archivo_dataset, sep=",")
         X = datos.drop(["Phishy"], axis=1).values #variables de todas las caracteristicas menos la ultima 
         Y = datos["Phishy"].values #variable que tiene el resultado
+
+        scaler = MinMaxScaler()
+        X = scaler.fit_transform(X)
   
         
         #separamos datos de prueba con datos (20% de datos de prueba)
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, train_size=0.8,test_size=0.2, random_state=0)#generador de numero aleatoreo dejarlo en 0)
         
         #categorizamos los resultados de y_train y de y_test (dejar los resultados en 0 y 1 )
-        y = keras.utils.to_categorical(Y_train) #0 o 1 
+        y_train = keras.utils.to_categorical(Y_train) #0 o 1 
         y_test = keras.utils.to_categorical(Y_test) #0 o 1 
         
         #validamos los   campos X_train e y  
-        assert X_train.shape[0] == y.shape[0]
+        assert X_train.shape[0] == y_train.shape[0]
 
         #definimos el imput y el output
         input_dim = X_train.shape[1]
-        outuput_dim = y.shape[1]
+        output_dim = y_train.shape[1]
 
+        
         #preparamos el ambiente de la red neuronal 
         model = keras.models.Sequential([
-            keras.layers.Dense(80, activation=tf.nn.relu, input_shape=(input_dim,)),# activador relu
-            keras.layers.Dense(80, activation=tf.nn.relu),#cada capa es de 80 neuronas
-            keras.layers.Dense(80, activation=tf.nn.relu),
-            keras.layers.Dense(outuput_dim, activation=tf.nn.sigmoid) #entrega los resultados clasificacion binaria se usa en sigmoid
+            keras.layers.Dense(128, activation=tf.nn.relu, input_shape=(input_dim,)),
+            keras.layers.Dropout(0.5),  # Agrega dropout para regularización
+            keras.layers.Dense(64, activation=tf.nn.relu),
+            keras.layers.Dropout(0.5),
+            keras.layers.Dense(output_dim, activation=tf.nn.sigmoid) #entrega los resultados clasificacion binaria se usa en sigmoid
         ])
-        model.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+
+        optimizer = keras.optimizers.Adam(learning_rate=0.001)  # Ajusta la tasa de aprendizaje
+        model.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
         model.summary()
         
         #entrenamos los resultados
-        history = model.fit(X_train, y, workers=4, epochs=1000, verbose=2)
+        history = model.fit(X_train, y_train, epochs=100, validation_split=0.1, verbose=2)
         df = pd.DataFrame(history.history)
         data_accuracy = df[["accuracy"]] 
         data_loss = df[["loss"]]

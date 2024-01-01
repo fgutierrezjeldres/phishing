@@ -14,10 +14,10 @@ archivo_dataset = 'dataset.csv'
 archivo_modelo = 'modelo.h5'
 
 #nombres carpetas 
-UPLOAD_FOLDER_PHISHING = '../Proyecto/archivos/entradas/mbox/phishing/'
-UPLOAD_FOLDER_NOPHISHING =  '../Proyecto/archivos/entradas/mbox/nophishing/'
-FOLDER_DATASET = '../Proyecto/archivos/salidas/dataset/'
-FOLDER_MODEL = '../Proyecto/archivos/salidas/modelo/'
+UPLOAD_FOLDER_PHISHING = '../phishing/archivos/entradas/mbox/phishing/'
+UPLOAD_FOLDER_NOPHISHING =  '../phishing/archivos/entradas/mbox/nophishing/'
+FOLDER_DATASET = '../phishing/archivos/salidas/dataset/'
+FOLDER_MODEL = '../phishing/archivos/salidas/modelo/'
 
 class Inicio:
     app = Flask(__name__)

@@ -247,7 +247,7 @@
                   </thead>
                   <tbody>
                     {% for label, metrics in report.items() %}
-                      {% if label not in ['accuracy', 'macro avg', 'weighted avg'] and metrics is mapping %}
+                      {% if label not in ['accuracy', 'macro avg', 'weighted avg', 'config', 'warning'] and metrics is mapping %}
                         <tr>
                           <td>{{ label }}</td>
                           {% set p = metrics.get('precision', 0) %}

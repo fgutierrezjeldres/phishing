@@ -12,6 +12,10 @@ _URL_TEXT_RE = re.compile(URLREGEX_NOT_ALONE, re.IGNORECASE)
 _WHITESPACE_RE = re.compile(r"\s")
 _URL_TRAILING_RE = re.compile(r"[)\].,;:'\"<>]+$")
 _SCRIPT_SCHEME_RE = re.compile(r"^\s*javascript:", re.IGNORECASE)
+_HTML_HINT_RE = re.compile(
+    r"<\s*(html|body|a|form|script|img|iframe|table|div|span|input|button)\b",
+    re.IGNORECASE,
+)
 
 _FALLBACK_CACHE = {}
 _TEXT_MIME_PREFIXES = ("text/",)
@@ -270,8 +274,11 @@ def __archivoAdjunto__(mensaje):
 def esHtml(mensaje):
     if "text/html" in getTipo(mensaje):
         return True
-    for soup in _get_soups(mensaje, solo_html=False):
-        if soup.find():
+    for dato in getDatos_Dict(mensaje):
+        if not _es_mime_texto(dato.get("mimeType")):
+            continue
+        texto = _to_text(dato.get("datos", ""))
+        if _HTML_HINT_RE.search(texto):
             return True
     return False
 

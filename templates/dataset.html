@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
   <head>
     <meta charset="utf-8" />
@@ -17,12 +17,18 @@
     <link href="{{ url_for('static', filename='plugins/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css') }}" rel="stylesheet" />
   </head>
   <body>
-    {% set feature_keys = [
-      'Formulario HTML', 'Contador De Dominio', 'Contador De Link', 'Contador De JavaScript',
-      'Llamada de Accion', 'PAYPAL', 'BANK', 'Account', 'Numero de Reenvios', 'IP en URL',
-      'Email Multipart', '@ en URL', 'Archivo Adjunto', 'Contenido HTML', 'Gmail', 'Outlook',
-      'Flash', 'Hexadecimal', 'Hiperlink de Imagenes'
-    ] %}
+    {% set feature_keys = feature_keys if feature_keys is defined else [] %}
+    {% macro render_cell(key, val) -%}
+      {%- set sval = (val|string).strip() -%}
+      {%- if key == 'MsgHash' -%}
+        <code title="{{ sval }}">{{ sval[:12] }}{% if sval|length > 12 %}...{% endif %}</code>
+      {%- elif sval in ['0', '1'] -%}
+        <span class="phish-badge {{ 'on' if sval == '1' else 'off' }}">{{ sval }}</span>
+      {%- else -%}
+        {{ val }}
+      {%- endif -%}
+    {%- endmacro %}
+
     {% set ns = namespace(phishy=0, legit=0) %}
     {% for row in resultado %}
       {% if row.get('Phishy') == 1 %}
@@ -36,7 +42,10 @@
     <div class="phish-shell">
       <section class="phish-head">
         <h2>Dataset Generado</h2>
-        <small>Validación de características extraídas antes de entrenar la red neuronal.</small>
+        <small>Validacion de caracteristicas extraidas antes de entrenar la red neuronal.</small>
+        {% if source_label %}
+          <small><strong>Origen:</strong> {{ source_label }}</small>
+        {% endif %}
       </section>
 
       <section class="phish-kpis">
@@ -65,40 +74,41 @@
       </section>
 
       <div class="phish-card">
-        <div class="card-header">Vista tabular de características</div>
+        <div class="card-header">Vista tabular de caracteristicas</div>
         <div class="card-body">
-          <p class="phish-note">
-            Revisa rápidamente la distribución de indicadores antes de ejecutar el entrenamiento.
-          </p>
-          <div class="phish-table-wrap">
-            <table id="dataset-table" class="table table-striped table-bordered table-hover m-b-0">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  {% for key in feature_keys %}
-                    <th class="text-nowrap">{{ key }}</th>
-                  {% endfor %}
-                  <th class="text-nowrap">Phishy</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for elemento in resultado %}
+          {% if resultado and feature_keys %}
+            <p class="phish-note">
+              Revisa rapidamente la distribucion de indicadores antes de ejecutar el entrenamiento.
+            </p>
+            <div class="phish-table-wrap">
+              <table id="dataset-table" class="table table-striped table-bordered table-hover m-b-0 w-100">
+                <thead>
                   <tr>
-                    <td>{{ loop.index }}</td>
+                    <th>#</th>
                     {% for key in feature_keys %}
-                      {% set val = elemento.get(key, 0) %}
-                      <td><span class="phish-badge {{ 'on' if val == 1 else 'off' }}">{{ val }}</span></td>
+                      <th class="text-nowrap">{{ key }}</th>
                     {% endfor %}
-                    <td>
-                      <span class="phish-badge {{ 'on' if elemento.get('Phishy', 0) == 1 else 'off' }}">
-                        {{ elemento.get('Phishy', 0) }}
-                      </span>
-                    </td>
+                    <th class="text-nowrap">Phishy</th>
                   </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {% for elemento in resultado %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      {% for key in feature_keys %}
+                        <td>{{ render_cell(key, elemento.get(key, '')) }}</td>
+                      {% endfor %}
+                      <td>{{ render_cell('Phishy', elemento.get('Phishy', 0)) }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="alert alert-warning m-b-15">
+              No hay datos para mostrar. Genera o carga el dataset primero.
+            </div>
+          {% endif %}
           <a href="{{ url_for('generacion_red_neuronal') }}" class="btn btn-primary phish-cta">Entrenar red neuronal</a>
         </div>
       </div>
@@ -119,11 +129,15 @@
     <script src="{{ url_for('static', filename='plugins/jszip/dist/jszip.min.js') }}"></script>
     <script>
       $(function () {
+        if (!$("#dataset-table").length) {
+          return;
+        }
         $("#dataset-table").DataTable({
           pageLength: 20,
-          lengthMenu: [10, 20, 50, 100],
+          lengthMenu: [10, 20, 50, 100, 250],
           scrollX: true,
           responsive: false,
+          autoWidth: false,
           dom: "Bfrtip",
           buttons: ["copy", "csv", "excel", "print"],
           order: [[0, "asc"]],

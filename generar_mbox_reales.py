@@ -13,10 +13,15 @@ from pathlib import Path
 
 
 HAM_URLS = [
+    "https://spamassassin.apache.org/old/publiccorpus/20021010_easy_ham.tar.bz2",
+    "https://spamassassin.apache.org/old/publiccorpus/20021010_hard_ham.tar.bz2",
+    "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham.tar.bz2",
     "https://spamassassin.apache.org/old/publiccorpus/20030228_easy_ham_2.tar.bz2",
     "https://spamassassin.apache.org/old/publiccorpus/20030228_hard_ham.tar.bz2",
 ]
 SPAM_URLS = [
+    "https://spamassassin.apache.org/old/publiccorpus/20021010_spam.tar.bz2",
+    "https://spamassassin.apache.org/old/publiccorpus/20030228_spam.tar.bz2",
     "https://spamassassin.apache.org/old/publiccorpus/20030228_spam_2.tar.bz2",
     "https://spamassassin.apache.org/old/publiccorpus/20050311_spam_2.tar.bz2",
 ]
@@ -139,6 +144,28 @@ def _sample_phishing_messages(paths, limit, seed):
     return selected
 
 
+def _append_unique_messages(dst, source):
+    seen = set()
+    for msg in dst:
+        seen.add(msg.as_bytes())
+
+    for msg in source:
+        raw = msg.as_bytes()
+        if raw in seen:
+            continue
+        seen.add(raw)
+        dst.append(msg)
+
+
+def _top_up_with_repeats(messages, target_size, seed):
+    if not messages or len(messages) >= target_size:
+        return
+    rng = random.Random(seed)
+    base = list(messages)
+    while len(messages) < target_size:
+        messages.append(rng.choice(base))
+
+
 def _write_mbox(messages, mbox_path):
     mbox_path.parent.mkdir(parents=True, exist_ok=True)
     if mbox_path.exists():
@@ -154,8 +181,8 @@ def main():
     parser = argparse.ArgumentParser(description="Genera mbox reales desde corpora publicos.")
     parser.add_argument("--out-phishing", default="archivos/entradas/mbox/phishing/real_phishing.mbox")
     parser.add_argument("--out-nophishing", default="archivos/entradas/mbox/nophishing/real_nophishing.mbox")
-    parser.add_argument("--count-phishing", type=int, default=80)
-    parser.add_argument("--count-nophishing", type=int, default=80)
+    parser.add_argument("--count-phishing", type=int, default=3000)
+    parser.add_argument("--count-nophishing", type=int, default=3000)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()
 
@@ -174,13 +201,17 @@ def main():
         phish_msgs = _sample_phishing_messages(spam_files, args.count_phishing, args.seed)
 
         if len(phish_msgs) < args.count_phishing:
-            # fallback: completa con spam real aunque no cumpla filtro phishing-like
-            extra = _sample_messages(
-                [p for p in spam_files if p not in set()],
-                args.count_phishing - len(phish_msgs),
-                args.seed + 100,
-            )
-            phish_msgs.extend(extra)
+            # Fallback: completa con spam real aunque no cumpla filtro phishing-like.
+            extra = _sample_messages(spam_files, args.count_phishing, args.seed + 100)
+            _append_unique_messages(phish_msgs, extra)
+
+        # Si no alcanza por unicidad real del corpus, completa con repeticion
+        # de correos reales para mantener el tamano solicitado.
+        _top_up_with_repeats(phish_msgs, args.count_phishing, args.seed + 1000)
+        _top_up_with_repeats(ham_msgs, args.count_nophishing, args.seed + 2000)
+
+        phish_msgs = phish_msgs[: args.count_phishing]
+        ham_msgs = ham_msgs[: args.count_nophishing]
 
         _write_mbox(phish_msgs, out_ph)
         _write_mbox(ham_msgs, out_np)

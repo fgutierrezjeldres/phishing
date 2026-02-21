@@ -1,0 +1,438 @@
+:root {
+  --phish-primary: #0f766e;
+  --phish-primary-soft: #ccfbf1;
+  --phish-accent: #f97316;
+  --phish-ink: #0f172a;
+  --phish-muted: #475569;
+  --phish-surface: #ffffff;
+  --phish-border: #dbe4ee;
+  --phish-danger: #dc2626;
+  --phish-success: #16a34a;
+}
+
+body {
+  font-family: "Source Sans 3", sans-serif;
+  color: var(--phish-ink);
+  background: radial-gradient(circle at top left, #dff6f3 0%, #f5f8fc 40%, #eef2ff 100%);
+}
+
+.phish-shell {
+  max-width: 1280px;
+  margin: 1.75rem auto;
+  padding: 0 1rem 2rem;
+}
+
+.phish-head {
+  background: linear-gradient(140deg, #0f766e 0%, #155e75 55%, #1d4ed8 100%);
+  color: #fff;
+  border-radius: 18px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2);
+  margin-bottom: 1rem;
+}
+
+.phish-head h1,
+.phish-head h2 {
+  font-family: "Montserrat", sans-serif;
+  font-weight: 700;
+  margin: 0;
+}
+
+.phish-head small {
+  display: block;
+  opacity: 0.9;
+}
+
+.phish-card {
+  background: var(--phish-surface);
+  border: 1px solid var(--phish-border);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.phish-card .card-header {
+  background: #f8fafc;
+  border-bottom: 1px solid var(--phish-border);
+  font-weight: 700;
+}
+
+.phish-card .card-body {
+  padding: 1rem 1.25rem;
+}
+
+.phish-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.phish-kpi {
+  background: var(--phish-surface);
+  border: 1px solid var(--phish-border);
+  border-radius: 14px;
+  padding: 0.8rem;
+}
+
+.phish-kpi .label {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--phish-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+}
+
+.phish-kpi .value {
+  margin: 0.1rem 0 0;
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.phish-kpi.primary {
+  background: linear-gradient(160deg, #f0fdfa 0%, #ccfbf1 100%);
+  border-color: #99f6e4;
+}
+
+.phish-kpi.warn {
+  background: linear-gradient(160deg, #fff7ed 0%, #ffedd5 100%);
+  border-color: #fed7aa;
+}
+
+.phish-kpi.danger {
+  background: linear-gradient(160deg, #fef2f2 0%, #fee2e2 100%);
+  border-color: #fecaca;
+}
+
+.phish-kpi.ink {
+  background: linear-gradient(160deg, #f8fafc 0%, #e2e8f0 100%);
+}
+
+.phish-effectiveness .card-body {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.phish-effect-top {
+  display: grid;
+  grid-template-columns: minmax(190px, 250px) 1fr;
+  gap: 0.9rem;
+  align-items: center;
+}
+
+.phish-effect-score {
+  border: 1px solid var(--phish-border);
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 0.75rem;
+}
+
+.phish-effect-score .label {
+  margin: 0;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--phish-muted);
+  font-weight: 700;
+}
+
+.phish-effect-score .value {
+  margin: 0.15rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1;
+  font-family: "Montserrat", sans-serif;
+}
+
+.phish-effect-score span {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.phish-effect-score.good {
+  background: #ecfdf5;
+  border-color: #86efac;
+  color: #166534;
+}
+
+.phish-effect-score.warn {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+.phish-effect-score.bad {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.phish-effect-progress .bar-bg {
+  height: 11px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 0.55rem;
+}
+
+.phish-effect-progress .bar-fg {
+  height: 100%;
+  border-radius: inherit;
+}
+
+.phish-effect-progress .bar-fg.good {
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+}
+
+.phish-effect-progress .bar-fg.warn {
+  background: linear-gradient(90deg, #f97316 0%, #fb923c 100%);
+}
+
+.phish-effect-progress .bar-fg.bad {
+  background: linear-gradient(90deg, #dc2626 0%, #ef4444 100%);
+}
+
+.phish-effect-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.phish-effect-item {
+  border: 1px solid var(--phish-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.6rem;
+  background: #f8fafc;
+}
+
+.phish-effect-item span {
+  display: block;
+  color: var(--phish-muted);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.phish-effect-item strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.phish-badge {
+  display: inline-block;
+  min-width: 26px;
+  text-align: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.phish-badge.on {
+  color: #fff;
+  background: var(--phish-danger);
+}
+
+.phish-badge.off {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+.phish-table-wrap {
+  border: 1px solid var(--phish-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.phish-note {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  color: var(--phish-muted);
+}
+
+.phish-cta {
+  margin-top: 1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+}
+
+.phish-report {
+  white-space: pre-wrap;
+  font-family: "Consolas", "Courier New", monospace;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  padding: 0.9rem;
+  font-size: 0.85rem;
+  max-height: 330px;
+  overflow: auto;
+}
+
+.phish-report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.phish-report-table th,
+.phish-report-table td {
+  border-bottom: 1px solid var(--phish-border);
+  padding: 0.45rem 0.35rem;
+  text-align: right;
+}
+
+.phish-report-table th:first-child,
+.phish-report-table td:first-child {
+  text-align: left;
+  font-weight: 700;
+}
+
+.phish-report-table thead th {
+  font-size: 0.78rem;
+  color: var(--phish-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.phish-report-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.phish-metric-good {
+  color: #166534;
+  background: #ecfdf5;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.phish-metric-warn {
+  color: #92400e;
+  background: #fff7ed;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.phish-metric-bad {
+  color: #991b1b;
+  background: #fef2f2;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.phish-metric-legend {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.55rem;
+}
+
+.phish-metric-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.phish-report-raw {
+  margin-top: 0.75rem;
+}
+
+.phish-chart-box {
+  position: relative;
+  height: 360px;
+}
+
+.phish-chart-box.small {
+  height: 300px;
+}
+
+.phish-upload-hint {
+  margin-top: 0.25rem;
+  color: var(--phish-muted);
+  font-size: 0.85rem;
+}
+
+.phish-conf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.phish-cm-cell {
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: #f8fafc;
+  border: 1px solid var(--phish-border);
+}
+
+.phish-cm-cell strong {
+  display: block;
+  font-size: 1.45rem;
+  font-family: "Montserrat", sans-serif;
+}
+
+.phish-cm-cell span {
+  font-size: 0.8rem;
+  color: var(--phish-muted);
+}
+
+.phish-cm-cell.good {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+}
+
+.phish-cm-cell.bad {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+@media (max-width: 991px) {
+  .phish-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phish-effect-top {
+    grid-template-columns: 1fr;
+  }
+
+  .phish-effect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 575px) {
+  .phish-shell {
+    margin-top: 0.9rem;
+    padding: 0 0.5rem 1rem;
+  }
+
+  .phish-head {
+    border-radius: 14px;
+    padding: 0.95rem;
+  }
+
+  .phish-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .phish-conf-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phish-effect-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .phish-chart-box,
+  .phish-chart-box.small {
+    height: 240px;
+  }
+}

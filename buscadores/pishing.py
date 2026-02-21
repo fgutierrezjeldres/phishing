@@ -1,18 +1,17 @@
 # coding=utf-8
 from abc import ABCMeta, abstractmethod
+import ipaddress
+import os
+import re
+import mailbox
+from urllib.parse import urlparse
 
-#from numpy import append,
 import constantes 
 import utilidades 
-import pandas as pd
-import re
-
-import mailbox
 
 
 #clase  abstracta para sobreescribir los metodos necesarios para buscar las caracteristicas 
-class Buscador:
-    __metaclass__ = ABCMeta
+class Buscador(metaclass=ABCMeta):
     
     @abstractmethod
     def getBuscadorTitulo(self):
@@ -21,199 +20,195 @@ class Buscador:
     @abstractmethod
     def getBuscador(self, mensaje):
         pass
+
+
+FORM_RE = re.compile(r"<\s?\/?\s?form\s?>", re.IGNORECASE)
+EMAIL_RE = re.compile(constantes.EMAILREGEX, re.IGNORECASE)
+HEX_RE = re.compile(constantes.HEXADECIMALREGEX, re.IGNORECASE)
+FLASH_LINK_RE = re.compile(constantes.FLASH_LINKED_CONTENT, re.IGNORECASE)
+FLASH_OBJECT_RE = re.compile(constantes.FLASH_OBJECT, re.IGNORECASE)
+FORWARDED_RE = re.compile("forwarded message")
+HOST_WITH_TLD_RE = re.compile(r"^(?:[a-z0-9-]+\.)+[a-z]{2,}$", re.IGNORECASE)
+ACTION_WORD_RES = [re.compile(rf"\b{re.escape(palabra.lower())}\b") for palabra in constantes.PALABRAS]
+PAYPAL_RE = re.compile(r"\bpaypal\b")
+BANK_RE = re.compile(r"\bbank(?:ing)?\b")
+ACCOUNT_RE = re.compile(r"\baccount\b")
+GMAIL_RE = re.compile(r"\bgmail(?:\.com)?\b")
+OUTLOOK_RE = re.compile(r"\boutlook(?:\.com)?\b")
+SCRIPT_FALLBACK_RE = re.compile(r"<\s*script\b|javascript\s*:", re.IGNORECASE)
+
+
+def _a_flag(valor):
+    return constantes.VERDADERO if valor else constantes.FALSO
+
+
+def _get_mensaje_cache(mensaje):
+    try:
+        cache = mensaje.__dict__.get("_phishing_buscadores_cache")
+        if cache is None:
+            cache = {}
+            mensaje.__dict__["_phishing_buscadores_cache"] = cache
+        return cache
+    except Exception:
+        return {}
+
+
+def _texto_correo(mensaje):
+    cache = _get_mensaje_cache(mensaje)
+    texto = cache.get("texto_correo")
+    if texto is None:
+        texto = utilidades.getDatos(mensaje).lower()
+        cache["texto_correo"] = texto
+    return texto
+
+
+def _tiene_contenido(datos):
+    return any(str(dato["datos"] or "").strip() for dato in datos)
+
+
+def _safe_log(*args):
+    try:
+        print(*args)
+    except (OSError, ValueError):
+        pass
+
+
 #se crea clases para cada carasteristicas a buscar
 
 class Dominio(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Contador De Dominio'
-        return titulo
+        return 'Contador De Dominio'
         
     def getBuscador(self, mensaje):
-        super(Dominio, self).getBuscador(mensaje)
-        correo = utilidades.getDatos(mensaje).lower()
-        retorno = re.compile(constantes.URLREGEX, re.IGNORECASE).search(correo) != None
-        if retorno == constantes.VERDADERO:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        for url in utilidades.getUrl_Datos(mensaje):
+            parsed = urlparse(url)
+            host = parsed.hostname
+            if not host:
+                continue
+            try:
+                ipaddress.ip_address(host)
+                continue
+            except ValueError:
+                pass
+            if HOST_WITH_TLD_RE.search(host):
+                return constantes.VERDADERO
+        return constantes.FALSO
 
 class Link(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Contador De Link'
-        return titulo
+        return 'Contador De Link'
     
     def getBuscador(self, mensaje):
-        super(Link, self).getBuscador(mensaje)
-        correo = utilidades.getDatos(mensaje).lower()
-        retorno = re.compile(r'<a[^>]+href=\'(.*?)\'[^>]*>(.*)?</a>', re.IGNORECASE).search(correo) != None
-        if retorno == constantes.VERDADERO:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(len(utilidades.getHyperlinks(mensaje)) > 0)
 
 class LinkImage(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Hiperlink de Imagenes'
-        return titulo
+        return 'Hiperlink de Imagenes'
     
     def getBuscador(self, mensaje):
         retorno = len(utilidades.getImageLink(mensaje))
-        if retorno > 0:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(retorno > 0)
         
 class JavaScript(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Contador De JavaScript'
-        return titulo
+        return 'Contador De JavaScript'
     
     def getBuscador(self, mensaje):
-        retorno = len(utilidades.getJavascript(mensaje))
-        if retorno > 0:
+        if len(utilidades.getJavascript(mensaje)) > 0:
             return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        correo = _texto_correo(mensaje)
+        return _a_flag(SCRIPT_FALLBACK_RE.search(correo) is not None)
         
 class EtiquetaFormularioHTML(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Formulario HTML'
-        return titulo
+        return 'Formulario HTML'
 
     def getBuscador(self, mensaje):
-        super(EtiquetaFormularioHTML, self).getBuscador(mensaje)
-        correo = utilidades.getDatos(mensaje).lower()
-        retorno = re.compile(r'<\s?\/?\s?form\s?>', re.IGNORECASE).search(correo) != None
-        if retorno == constantes.VERDADERO:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        correo = _texto_correo(mensaje)
+        return _a_flag(FORM_RE.search(correo) is not None)
 
 class ActionWord(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Llamada de Accion'
-        return titulo
+        return 'Llamada de Accion'
     
-    def getBuscador(self, mensaje, umbral = 3):
-        super(ActionWord, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        retorno = 0
-        palabras_encontradas = []
-        for palabra in constantes.PALABRAS:
-            if re.search(palabra, correo):
-                retorno += 1
-                palabras_encontradas.append(palabra)
-                
-        #return retorno       
-        if retorno >= umbral:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO  
+    def getBuscador(self, mensaje, umbral = 2):
+        correo = _texto_correo(mensaje)
+        retorno = sum(1 for palabra_re in ACTION_WORD_RES if palabra_re.search(correo))
+        try:
+            umbral = int(umbral)
+        except (TypeError, ValueError):
+            umbral = 2
+        umbral = max(1, umbral)
+        return _a_flag(retorno >= umbral)
 
 class Paypal(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'PAYPAL'
-        return titulo
+        return 'PAYPAL'
     
     def getBuscador(self, mensaje):
-        super(Paypal, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        if re.search("paypal", correo):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO 
+        correo = _texto_correo(mensaje)
+        return _a_flag(PAYPAL_RE.search(correo) is not None)
 
 class Bank(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'BANK'
-        return titulo
+        return 'BANK'
     
     def getBuscador(self, mensaje):
-        super(Bank, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        if re.search("bank", correo):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO 
+        correo = _texto_correo(mensaje)
+        return _a_flag(BANK_RE.search(correo) is not None)
 
 class Account(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Account'
-        return titulo
+        return 'Account'
     
     def getBuscador(self, mensaje):
-        super(Account, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        if re.search("account", correo):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO 
+        correo = _texto_correo(mensaje)
+        return _a_flag(ACCOUNT_RE.search(correo) is not None)
 
 class Reenvio(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Numero de Reenvios'
-        return titulo
+        return 'Numero de Reenvios'
     
     def getBuscador(self, mensaje):
-        super(Reenvio, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        resultado = re.findall("forwarded message", correo)
-        if len(resultado) >= 2:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO 
+        correo = _texto_correo(mensaje)
+        resultado = FORWARDED_RE.findall(correo)
+        return _a_flag(len(resultado) >= 2)
 
 class URL(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Contador De Link'
-        return titulo
+        return 'Contador De Link'
     
     def getBuscador(self, mensaje):
-        super(URL, self).getBuscador(mensaje)
-        correo = utilidades.getDatos(mensaje).lower()
-        retorno = re.compile(constantes.URLREGEX_NOT_ALONE, re.IGNORECASE).search(correo) != None
-        if retorno == constantes.VERDADERO:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(len(utilidades.getUrl_Datos(mensaje)) > 0)
         
 class Multipart(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Email Multipart'
-        return titulo
+        return 'Email Multipart'
     
     def getBuscador(self, mensaje):
         resultado =  utilidades.getMultipart_Email(mensaje)
-        if resultado == True:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(resultado is True)
 
 class IPEnURL(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'IP en URL'
-        return titulo
+        return 'IP en URL'
     
     def getBuscador(self, mensaje):
         resultado = len(utilidades.getIPHref(mensaje))
-        if resultado > 0:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(resultado > 0)
 
 class ArrobaEnURL(Buscador):
     def getBuscadorTitulo(self):
-        titulo = '@ en URL'
-        return titulo
+        return '@ en URL'
     
     def getBuscador(self, mensaje):
-        email = re.compile(constantes.EMAILREGEX, re.IGNORECASE)
         urls = utilidades.getUrl_Datos(mensaje)
 
         if urls is not None:
             for url in urls:
+                email_match = EMAIL_RE.search(url)
                 if (url.lower().startswith('mailto:') or (
-                    email.search(url) != None and email.search(url).group() != None)):
+                    email_match is not None and email_match.group() is not None)):
                     continue
                 arroba = url.find("@")
                 arrobaHexadecimal = url.find("%40")
@@ -232,84 +227,79 @@ class ArrobaEnURL(Buscador):
     
 class ArchivoAdjunto(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Archivo Adjunto'
-        return titulo
+        return 'Archivo Adjunto'
     
     def getBuscador(self, mensaje):
         resultado = utilidades.getContadorArchivoAdjunto(mensaje)
-        if resultado > 0:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(resultado > 0)
         
 class ContenidoHTML(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Contenido HTML'
-        return titulo
+        return 'Contenido HTML'
     
     def getBuscador(self, mensaje):
         resultado = utilidades.esHtml(mensaje)
-        if resultado:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        return _a_flag(resultado)
         
 class Gmail(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Gmail'
-        return titulo
+        return 'Gmail'
     
     def getBuscador(self, mensaje):
-        super(Gmail, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        if re.search("gmail", correo):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO 
+        correo = _texto_correo(mensaje)
+        return _a_flag(GMAIL_RE.search(correo) is not None)
 
 class Outlook(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Outlook'
-        return titulo
+        return 'Outlook'
     
     def getBuscador(self, mensaje):
-        super(Outlook, self).getBuscador(mensaje)
-        correo =  utilidades.getDatos(mensaje).lower()
-        if re.search("outlook", correo):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        correo = _texto_correo(mensaje)
+        return _a_flag(OUTLOOK_RE.search(correo) is not None)
 
 class Hexadecimal(Buscador):
     def getBuscadorTitulo(self):
-        titulo = 'Hexadecimal'
-        return titulo
+        return 'Hexadecimal'
     
     def getBuscador(self, mensaje):
-        super(Hexadecimal, self).getBuscador(mensaje)
-        cadena = utilidades.getDatos(mensaje).lower()
-        retorno = re.compile(constantes.HEXADECIMALREGEX, re.IGNORECASE).search(cadena) != None
-        if retorno == constantes.VERDADERO:
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        cadena = _texto_correo(mensaje)
+        return _a_flag(HEX_RE.search(cadena) is not None)
 
 class Flash(Buscador):
     
     def getBuscadorTitulo(self):
-        titulo = "Flash"
-        return titulo
+        return "Flash"
     
     def getBuscador(self,mensaje):
-        super(Flash,self).getBuscador(mensaje)
-        datos = utilidades.getDatos(mensaje).lower()
-        swf = re.compile(constantes.FLASH_LINKED_CONTENT, re.IGNORECASE).findall(datos)
-        flash = re.compile(constantes.FLASH_OBJECT, re.IGNORECASE).search(datos)
-        if (swf != None and len(swf) >0) or \
-        (flash != None):
-            return constantes.VERDADERO
-        else:
-            return constantes.FALSO
+        datos = _texto_correo(mensaje)
+        swf = FLASH_LINK_RE.findall(datos)
+        flash = FLASH_OBJECT_RE.search(datos)
+        return _a_flag((swf is not None and len(swf) > 0) or (flash is not None))
+
+
+BUSCADORES = (
+    EtiquetaFormularioHTML(),
+    Dominio(),
+    Link(),
+    JavaScript(),
+    ActionWord(),
+    Paypal(),
+    Bank(),
+    Account(),
+    Reenvio(),
+    URL(),
+    IPEnURL(),
+    Multipart(),
+    ArrobaEnURL(),
+    ArchivoAdjunto(),
+    ContenidoHTML(),
+    Gmail(),
+    Outlook(),
+    Flash(),
+    Hexadecimal(),
+    LinkImage(),
+)
+BUSCADORES_COMPILED = tuple((buscador.getBuscadorTitulo(), buscador.getBuscador) for buscador in BUSCADORES)
 
 #metodo que permite crear el dataset    
 class Pishing:
@@ -319,27 +309,24 @@ class Pishing:
         self.carpeta = carpeta
 
     def examinar(self):
-        
-        print("carpeta : ", self.carpeta + self.archivo_mbox)
-        mbox = mailbox.mbox(self.carpeta + self.archivo_mbox)
-        
-        i = 1
-        data = []
-        buscadores = [EtiquetaFormularioHTML(),Dominio(),Link(),JavaScript(),ActionWord(), Paypal(), Bank(),Account(),
-                      Reenvio(), URL(),IPEnURL(),Multipart(), ArrobaEnURL(), ArchivoAdjunto(), ContenidoHTML(),
-                       Gmail(), Outlook(),Flash(),Hexadecimal(),LinkImage()]
-        for mensaje in mbox:
-            caracteristicas = {}
-            total = 0
-            datos =  utilidades.getDatos_Dict(mensaje)
-            for dato in datos:
-                    total +=len(re.sub(r'\s+','',dato["datos"]))
-            if total < 1:
-                print("correo vacio: " + utilidades.getDatos(mensaje))
-                continue
-            for buscador in buscadores:
-                caracteristicas[buscador.getBuscadorTitulo()] = buscador.getBuscador(mensaje)
+        ruta_mbox = os.path.abspath(os.path.join(self.carpeta, self.archivo_mbox))
+        _safe_log("carpeta :", ruta_mbox)
+        mbox = mailbox.mbox(ruta_mbox)
 
-            caracteristicas["Phishy"] = self.phishing
-            data.append(caracteristicas)
+        data = []
+        try:
+            for mensaje in mbox:
+                datos = utilidades.getDatos_Dict(mensaje)
+                if not _tiene_contenido(datos):
+                    _safe_log("correo vacio")
+                    continue
+
+                caracteristicas = {
+                    titulo: buscador_fn(mensaje)
+                    for titulo, buscador_fn in BUSCADORES_COMPILED
+                }
+                caracteristicas["Phishy"] = self.phishing
+                data.append(caracteristicas)
+        finally:
+            mbox.close()
         return data

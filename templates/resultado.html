@@ -2,284 +2,465 @@
 <html lang="es">
   <head>
     <meta charset="utf-8" />
-    <title>Proyecto | Red Neuronal</title>
-    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
-    <meta content="" name="entrega resultados obtenidos de una red neuronal..."/>
-    <meta content="" name="F. Gutierrez Jeldres" />
-    <!-- ================== BEGIN BASE CSS STYLE ================== -->
+    <title>Detector de Phishing | Resultado</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700"
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link href="../static/css/default/app.min.css" rel="stylesheet" />
-    <!-- ================== END BASE CSS STYLE ================== -->
-    <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
-    <link
-      href="../static/plugins/datatables.net-bs4/css/dataTables.bootstrap4.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="../static/plugins/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css"
-      rel="stylesheet"
-    />
-    <link
-      href="../static/plugins/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css"
-      rel="stylesheet"
-    />
-    <!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{{ url_for('static', filename='css/default/app.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/phishing-ui.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='plugins/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='plugins/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='plugins/datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css') }}" rel="stylesheet" />
   </head>
   <body>
-    <!-- begin #page-loader -->
-    <div id="page-loader" class="fade show">
-      <span class="spinner"></span>
-    </div>
-    <!-- end #page-loader -->
-    <!-- begin #page-container -->
-    <div
-      id="page-container"
-      class="fade in page-sidebar-fixed page-header-fixed"
-    >
-      <!-- begin #header -->
-      <div id="header" class="header navbar-default">
-        <!-- begin navbar-header -->
-        <div class="navbar-header">
-          <a href="#" class="navbar-brand"
-            ><span class="navbar-logo"></span> <b>Resultados</b>&nbsp; Red
-            Neuronal</a
-          >
+    {% set cm = resultado.snn_cm %}
+    {% set tn = cm[0][0] %}
+    {% set fp = cm[0][1] %}
+    {% set fn = cm[1][0] %}
+    {% set tp = cm[1][1] %}
+    {% set total = tn + fp + fn + tp %}
+    {% set precision_phishing = (tp / (tp + fp)) if (tp + fp) else 0 %}
+    {% set recall_phishing = (tp / (tp + fn)) if (tp + fn) else 0 %}
+    {% set f1_phishing = (2 * precision_phishing * recall_phishing / (precision_phishing + recall_phishing)) if (precision_phishing + recall_phishing) else 0 %}
+    {% set fpr = (fp / (fp + tn)) if (fp + tn) else 0 %}
+    {% set fnr = (fn / (fn + tp)) if (fn + tp) else 0 %}
+    {% set specificity = (tn / (tn + fp)) if (tn + fp) else 0 %}
+    {% set balanced_acc = (recall_phishing + specificity) / 2 %}
+    {% set error_rate = ((fp + fn) / total) if total else 0 %}
+    {% set detection_score = (0.40 * recall_phishing) + (0.30 * precision_phishing) + (0.20 * specificity) + (0.10 * (1 - fpr)) %}
+    {% set detection_score_pct = detection_score * 100 %}
+    {% if detection_score >= 0.95 %}
+      {% set detection_level = 'Excelente' %}
+      {% set detection_tone = 'good' %}
+    {% elif detection_score >= 0.85 %}
+      {% set detection_level = 'Buena' %}
+      {% set detection_tone = 'good' %}
+    {% elif detection_score >= 0.75 %}
+      {% set detection_level = 'Media' %}
+      {% set detection_tone = 'warn' %}
+    {% else %}
+      {% set detection_level = 'Baja' %}
+      {% set detection_tone = 'bad' %}
+    {% endif %}
+
+    <div id="page-loader" class="fade show"><span class="spinner"></span></div>
+    <div class="phish-shell">
+      <section class="phish-head">
+        <h2>Evaluación del Modelo</h2>
+        <small>Resumen de entrenamiento, métricas de precisión y comportamiento de clasificación.</small>
+      </section>
+
+      <section class="phish-kpis">
+        <article class="phish-kpi primary">
+          <p class="label">Accuracy de prueba</p>
+          <p class="value">{{ '%.2f'|format(resultado.test_acc * 100) }}%</p>
+        </article>
+        <article class="phish-kpi warn">
+          <p class="label">Loss de prueba</p>
+          <p class="value">{{ '%.4f'|format(resultado.test_loss) }}</p>
+        </article>
+        <article class="phish-kpi ink">
+          <p class="label">Predicciones</p>
+          <p class="value">{{ resultado.prediccion|length }}</p>
+        </article>
+        <article class="phish-kpi danger">
+          <p class="label">Errores FP + FN</p>
+          <p class="value">{{ fp + fn }}</p>
+        </article>
+      </section>
+
+      <section class="phish-card phish-effectiveness m-b-15">
+        <div class="card-header">Efectividad de deteccion de phishing</div>
+        <div class="card-body">
+          <div class="phish-effect-top">
+            <div class="phish-effect-score {{ detection_tone }}">
+              <p class="label">Score global</p>
+              <p class="value">{{ '%.2f'|format(detection_score_pct) }}%</p>
+              <span>Nivel: {{ detection_level }}</span>
+            </div>
+            <div class="phish-effect-progress">
+              <div class="bar-bg">
+                <div class="bar-fg {{ detection_tone }}" style="width: {{ '%.2f'|format(detection_score_pct if detection_score_pct <= 100 else 100) }}%;"></div>
+              </div>
+              <p class="phish-note m-b-0">
+                El score pondera principalmente <strong>recall phishing</strong> y <strong>precision phishing</strong>. 
+                Prioriza detectar ataques y controlar falsas alarmas.
+              </p>
+            </div>
+          </div>
+          <div class="phish-effect-grid">
+            <div class="phish-effect-item">
+              <span>Recall phishing (TPR)</span>
+              <strong>{{ '%.2f'|format(recall_phishing * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Precision phishing</span>
+              <strong>{{ '%.2f'|format(precision_phishing * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>F1 phishing</span>
+              <strong>{{ '%.2f'|format(f1_phishing * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>False Positive Rate</span>
+              <strong>{{ '%.2f'|format(fpr * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>False Negative Rate</span>
+              <strong>{{ '%.2f'|format(fnr * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Balanced accuracy</span>
+              <strong>{{ '%.2f'|format(balanced_acc * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Tasa de error global</span>
+              <strong>{{ '%.2f'|format(error_rate * 100) }}%</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Total evaluado</span>
+              <strong>{{ total }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="row">
+        <div class="col-xl-8 m-b-15">
+          <div class="phish-card">
+            <div class="card-header">Curva de entrenamiento</div>
+            <div class="card-body">
+              <p class="phish-note">Evolución de la precisión y pérdida por época.</p>
+              <div class="phish-chart-box">
+                <canvas id="training-line-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-4 m-b-15">
+          <div class="phish-card">
+            <div class="card-header">Matriz de confusión</div>
+            <div class="card-body">
+              <div class="phish-conf-grid">
+                <div class="phish-cm-cell good">
+                  <strong>{{ tn }}</strong>
+                  <span>TN · Normal clasificado como Normal</span>
+                </div>
+                <div class="phish-cm-cell bad">
+                  <strong>{{ fp }}</strong>
+                  <span>FP · Normal clasificado como Phishing</span>
+                </div>
+                <div class="phish-cm-cell bad">
+                  <strong>{{ fn }}</strong>
+                  <span>FN · Phishing clasificado como Normal</span>
+                </div>
+                <div class="phish-cm-cell good">
+                  <strong>{{ tp }}</strong>
+                  <span>TP · Phishing clasificado como Phishing</span>
+                </div>
+              </div>
+              <div class="m-t-15">
+                <div class="phish-chart-box small">
+                  <canvas id="confusion-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div id="content" class="content">
-        <h1 class="page-header">Entrenamiento</h1>
-        <!-- end page-header -->
-        <!-- begin row -->
-        <div class="row">
-          <div class="col-xl-10">
-            <div class="panel panel-inverse" data-sortable-id="chart-js-1">
-              <div class="panel-heading">
-                <h4 class="panel-title">historial</h4>
-              </div>
-              <div class="panel-body">
-                <p>
-                  Muestra el historial de precision y perdida del entrenamiento
-                  realizado por la red neuronal.
-                </p>
-                <div>
-                  <canvas id="line-chart" data-render="chart-js"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h1 class="page-header">Evaluacion de Precision</h1>
-        <div class="row row-space-10 m-b-20">
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-blue m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">Precision</div>
-                <div class="stats-number">{{resultado.test_acc}}</div>
-                <div class="stats-desc">test accuracy</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-red m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">Perdida</div>
-                <div class="stats-number">{{resultado.test_loss}}</div>
-                <div class="stats-desc">test loss</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <h1 class="page-header">Matriz de Confusion</h1>
-        <div class="row row-space-10 m-b-20">
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-blue m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">TP</div>
-                <div class="stats-number">{{resultado.snn_cm[0][0]}}</div>
-                <div class="stats-desc">Verdadero Postivo</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-blue m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">FP</div>
-                <div class="stats-number">{{resultado.snn_cm[0][1]}}</div>
-                <div class="stats-desc">Falso Positivo</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="row row-space-10 m-b-20">
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-red m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">FN</div>
-                <div class="stats-number">{{resultado.snn_cm[1][0]}}</div>
-                <div class="stats-desc">Falso Negativo</div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-5 col-sm-5">
-            <div class="widget widget-stats bg-gradient-red m-b-10">
-              <div class="stats-icon stats-icon-lg"></div>
-              <div class="stats-content">
-                <div class="stats-title">TN</div>
-                <div class="stats-number">{{resultado.snn_cm[1][1]}}</div>
-                <div class="stats-desc">Verdadero Negativo</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div>
-          <div class="row">
-            <div class="col-lg-10">
-              <h1 class="page-header">Historial de Precision</h1>
-              <div class="panel panel-inverse">
-                <div class="panel-heading">
-                  <h4 class="panel-title">...</h4>
-                </div>
-                <div class="alert alert-warning fade show">
-                  <button type="button" class="close" data-dismiss="alert">
-                    <span aria-hidden="true">&times;</span>
-                  </button>
-                  muestra la precision de la red neuronal previamente ejecutada.
-                </div>
-                <!-- end alert -->
-                <!-- begin panel-body -->
-                <div class="panel-body">
-                  <table
-                    id="data-table-buttons"
-                    class="table table-striped table-bordered table-td-valign-middle"
-                  >
-                    <thead>
+
+      <div class="row">
+        <div class="col-xl-8 m-b-15">
+          <div class="phish-card">
+            <div class="card-header">Probabilidades de predicción</div>
+            <div class="card-body">
+              <div class="phish-table-wrap">
+                <table id="pred-table" class="table table-striped table-bordered table-hover m-b-0 w-100">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Normal</th>
+                      <th>Phishing</th>
+                      <th>Clase predicha</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for elemento in resultado.prediccion %}
+                      {% set pred = 1 if elemento[1] > elemento[0] else 0 %}
                       <tr>
-                        <th width="1%">#</th>
-                        <th class="text-nowrap">Normal</th>
-                        <th class="text-nowrap">Phishing</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {% for elemento in resultado.prediccion %}
-                      <tr class="odd gradeX">
-                        <td width="1%" class="f-w-600 text-inverse">
-                          {{loop.index}}
+                        <td>{{ loop.index }}</td>
+                        <td>{{ '%.6f'|format(elemento[0]) }}</td>
+                        <td>{{ '%.6f'|format(elemento[1]) }}</td>
+                        <td>
+                          {% if pred == 1 %}
+                            <span class="phish-badge on">Phishing</span>
+                          {% else %}
+                            <span class="phish-badge off">Normal</span>
+                          {% endif %}
                         </td>
-                        <td>{{elemento[0]}}</td>
-                        <td>{{elemento[1]}}</td>
                       </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-                <!-- end panel-body -->
+                    {% endfor %}
+                  </tbody>
+                </table>
               </div>
-              <!-- end panel -->
             </div>
-            <!-- end col-10 -->
           </div>
         </div>
-        <!-- end #content -->
-        <div>
-          <div class="col-lg-10">
-            <div class="panel panel-inverse" data-sortable-id="ui-typography-8">
-              <div class="panel-heading">
-                <h4 class="panel-title">Reporte de Clasificacion</h4>
+        <div class="col-xl-4 m-b-15">
+          <div class="phish-card m-b-15">
+            <div class="card-header">Resumen gráfico de predicción</div>
+            <div class="card-body">
+              <div class="phish-chart-box small">
+                <canvas id="prediction-summary-chart"></canvas>
               </div>
-              <div class="panel-body">
-                <p class="space-above" style="white-space: pre-wrap">
-                  <strong>{{ resultado.snn_report }}</strong>
-                </p>
-              </div>
+            </div>
+          </div>
+          <div class="phish-card">
+            <div class="card-header">Reporte de clasificación</div>
+            <div class="card-body">
+              {% macro metric_class(v) -%}
+                {%- if v >= 0.95 -%}phish-metric-good
+                {%- elif v >= 0.80 -%}phish-metric-warn
+                {%- else -%}phish-metric-bad
+                {%- endif -%}
+              {%- endmacro %}
+              {% set report = resultado.snn_report_dict %}
+              {% if report %}
+                <div class="phish-metric-legend">
+                  <span class="phish-metric-chip phish-metric-good">>= 0.95 Excelente</span>
+                  <span class="phish-metric-chip phish-metric-warn">0.80 - 0.949 Aceptable</span>
+                  <span class="phish-metric-chip phish-metric-bad">< 0.80 Riesgo</span>
+                </div>
+                <table class="phish-report-table">
+                  <thead>
+                    <tr>
+                      <th>Clase</th>
+                      <th>Precision</th>
+                      <th>Recall</th>
+                      <th>F1</th>
+                      <th>Support</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for label, metrics in report.items() %}
+                      {% if label not in ['accuracy', 'macro avg', 'weighted avg'] and metrics is mapping %}
+                        <tr>
+                          <td>{{ label }}</td>
+                          {% set p = metrics.get('precision', 0) %}
+                          {% set r = metrics.get('recall', 0) %}
+                          {% set f = metrics.get('f1-score', 0) %}
+                          <td class="{{ metric_class(p) }}">{{ '%.3f'|format(p) }}</td>
+                          <td class="{{ metric_class(r) }}">{{ '%.3f'|format(r) }}</td>
+                          <td class="{{ metric_class(f) }}">{{ '%.3f'|format(f) }}</td>
+                          <td>{{ metrics.get('support', 0)|int }}</td>
+                        </tr>
+                      {% endif %}
+                    {% endfor %}
+                    {% set macro = report.get('macro avg', {}) %}
+                    {% set weighted = report.get('weighted avg', {}) %}
+                    <tr>
+                      <td>accuracy</td>
+                      <td>-</td>
+                      <td>-</td>
+                      {% set acc = report.get('accuracy', 0) %}
+                      <td class="{{ metric_class(acc) }}">{{ '%.3f'|format(acc) }}</td>
+                      <td>{{ macro.get('support', 0)|int }}</td>
+                    </tr>
+                    <tr>
+                      <td>macro avg</td>
+                      {% set mp = macro.get('precision', 0) %}
+                      {% set mr = macro.get('recall', 0) %}
+                      {% set mf = macro.get('f1-score', 0) %}
+                      <td class="{{ metric_class(mp) }}">{{ '%.3f'|format(mp) }}</td>
+                      <td class="{{ metric_class(mr) }}">{{ '%.3f'|format(mr) }}</td>
+                      <td class="{{ metric_class(mf) }}">{{ '%.3f'|format(mf) }}</td>
+                      <td>{{ macro.get('support', 0)|int }}</td>
+                    </tr>
+                    <tr>
+                      <td>weighted avg</td>
+                      {% set wp = weighted.get('precision', 0) %}
+                      {% set wr = weighted.get('recall', 0) %}
+                      {% set wf = weighted.get('f1-score', 0) %}
+                      <td class="{{ metric_class(wp) }}">{{ '%.3f'|format(wp) }}</td>
+                      <td class="{{ metric_class(wr) }}">{{ '%.3f'|format(wr) }}</td>
+                      <td class="{{ metric_class(wf) }}">{{ '%.3f'|format(wf) }}</td>
+                      <td>{{ weighted.get('support', 0)|int }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <details class="phish-report-raw">
+                  <summary>Ver reporte crudo</summary>
+                  <div class="phish-report">{{ resultado.snn_report }}</div>
+                </details>
+              {% else %}
+                <div class="phish-report">{{ resultado.snn_report }}</div>
+              {% endif %}
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- ================== BEGIN BASE JS ================== -->
-    <script src="../static/js/app.min.js"></script>
-    <script src="../static/js/theme/default.min.js"></script>
-    <!-- ================== END BASE JS ================== -->
-    <!-- ================== BEGIN PAGE LEVEL JS ================== -->
-    <script src="../static/plugins/datatables.net/js/jquery.dataTables.min.js"></script>
-    <script src="../static/plugins/datatables.net-bs4/js/dataTables.bootstrap4.min.js"></script>
-    <script src="../static/plugins/datatables.net-responsive/js/dataTables.responsive.min.js"></script>
-    <script src="../static/plugins/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons/js/dataTables.buttons.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons-bs4/js/buttons.bootstrap4.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons/js/buttons.colVis.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons/js/buttons.flash.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons/js/buttons.html5.min.js"></script>
-    <script src="../static/plugins/datatables.net-buttons/js/buttons.print.min.js"></script>
-    <script src="../static/plugins/pdfmake/build/pdfmake.min.js"></script>
-    <script src="../static/plugins/pdfmake/build/vfs_fonts.js"></script>
-    <script src="../static/plugins/jszip/dist/jszip.min.js"></script>
-    <script src="../static/js/demo/table-manage-buttons.demo.js"></script>
-    <script src="../static/plugins/chart.js/dist/Chart.min.js"></script>
 
-    <!-- ================== END PAGE LEVEL JS ================== -->
-
+    <script src="{{ url_for('static', filename='js/app.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme/default.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-buttons/js/dataTables.buttons.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-buttons-bs4/js/buttons.bootstrap4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-buttons/js/buttons.html5.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/datatables.net-buttons/js/buttons.print.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/pdfmake/build/pdfmake.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/pdfmake/build/vfs_fonts.js') }}"></script>
+    <script src="{{ url_for('static', filename='plugins/jszip/dist/jszip.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
     <script>
-              Chart.defaults.global.defaultFontColor = COLOR_DARK;
-              Chart.defaults.global.defaultFontFamily = FONT_FAMILY;
-              Chart.defaults.global.defaultFontStyle = FONT_WEIGHT;
-              var lineChartData = {
-                labels: ['0', '200', '400', '600', '800', '1000'],
-                datasets: [{
-                  label: 'Precision',
-                  borderColor: COLOR_BLUE,
-                  pointBackgroundColor: COLOR_BLUE,
-                  pointRadius: 2,
-                  borderWidth: 2,
-                  backgroundColor: COLOR_BLUE_TRANSPARENT_3,
-                  data:{{resultado.data_accuracy}}
-                }, {
-                  label: 'Error',
-                  borderColor: COLOR_DARK_LIGHTER,
-                  pointBackgroundColor: COLOR_DARK,
-                  pointRadius: 2,
-                  borderWidth: 2,
-                  backgroundColor: COLOR_DARK_TRANSPARENT_3,
-                  data: {{resultado.data_loss}}
+      (function () {
+        if (typeof Chart === "undefined") {
+          console.error("Chart.js no cargó.");
+          return;
+        }
+
+        const accuracyRaw = {{ resultado.data_accuracy|tojson }};
+        const lossRaw = {{ resultado.data_loss|tojson }};
+        const cm = {{ resultado.snn_cm|tojson }};
+        const predictionRaw = {{ resultado.prediccion|tojson }};
+
+        function toNum(v) {
+          const n = Number(Array.isArray(v) ? v[0] : v);
+          return Number.isFinite(n) ? n : 0;
+        }
+
+        const accuracy = (accuracyRaw || []).map(toNum);
+        const loss = (lossRaw || []).map(toNum);
+        const prediction = (predictionRaw || []).map(function (pair) {
+          return Array.isArray(pair) ? [toNum(pair[0]), toNum(pair[1])] : [0, 0];
+        });
+        const epochs = Array.from({ length: Math.max(accuracy.length, loss.length) }, function (_, i) { return i + 1; });
+        const predNormal = prediction.filter(function (p) { return p[0] >= p[1]; }).length;
+        const predPhishing = prediction.length - predNormal;
+        const avgNormalProb = prediction.length ? prediction.reduce(function (acc, p) { return acc + p[0]; }, 0) / prediction.length : 0;
+        const avgPhishingProb = prediction.length ? prediction.reduce(function (acc, p) { return acc + p[1]; }, 0) / prediction.length : 0;
+
+        const trainCanvas = document.getElementById("training-line-chart");
+        const cmCanvas = document.getElementById("confusion-chart");
+        const predCanvas = document.getElementById("prediction-summary-chart");
+        if (!trainCanvas || !cmCanvas || !predCanvas) {
+          return;
+        }
+
+        new Chart(trainCanvas.getContext("2d"), {
+          type: "line",
+          data: {
+            labels: epochs,
+            datasets: [
+              {
+                label: "Accuracy",
+                borderColor: "#0f766e",
+                pointBackgroundColor: "#0f766e",
+                backgroundColor: "rgba(15, 118, 110, 0.12)",
+                data: accuracy,
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 2
+              },
+              {
+                label: "Loss",
+                borderColor: "#f97316",
+                pointBackgroundColor: "#f97316",
+                backgroundColor: "rgba(249, 115, 22, 0.14)",
+                data: loss,
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 2
               }
-              ]};
-      var handleChartJs = function() {
-      	var ctx = document.getElementById('line-chart').getContext('2d');
-      	var lineChart = new Chart(ctx, {
-      		type: 'line',
-      		data: lineChartData
-      	});
-      };
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            legend: { display: true },
+            tooltips: { mode: "index", intersect: false },
+            scales: {
+              xAxes: [{
+                display: true,
+                gridLines: { display: false },
+                scaleLabel: { display: true, labelString: "Epoca" },
+                ticks: { maxTicksLimit: 12 }
+              }],
+              yAxes: [{
+                display: true,
+                ticks: { beginAtZero: true, max: 1, stepSize: 0.1 },
+                scaleLabel: { display: true, labelString: "Valor" }
+              }]
+            },
+            elements: { line: { tension: 0.25 } }
+          }
+        });
 
-      var ChartJs = function () {
-      	"use strict";
-      	return {
-      		//main function
-      		init: function () {
-      			handleChartJs();
-      		}
-      	};
-      }();
+        new Chart(cmCanvas.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: ["TN", "FP", "FN", "TP"],
+            datasets: [{
+              label: "Conteo",
+              data: [cm[0][0], cm[0][1], cm[1][0], cm[1][1]],
+              backgroundColor: ["#16a34a", "#dc2626", "#dc2626", "#16a34a"],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            legend: { display: false },
+            maintainAspectRatio: false,
+            scales: {
+              xAxes: [{ gridLines: { display: false } }],
+              yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }]
+            }
+          }
+        });
 
-      $(document).ready(function() {
-      	ChartJs.init();
-      });
+        new Chart(predCanvas.getContext("2d"), {
+          type: "bar",
+          data: {
+            labels: ["Pred Normal", "Pred Phishing", "Media Prob Normal", "Media Prob Phishing"],
+            datasets: [{
+              label: "Resumen",
+              data: [predNormal, predPhishing, avgNormalProb, avgPhishingProb],
+              backgroundColor: ["#64748b", "#dc2626", "#0f766e", "#f97316"],
+              borderWidth: 0
+            }]
+          },
+          options: {
+            maintainAspectRatio: false,
+            legend: { display: false },
+            scales: {
+              xAxes: [{ gridLines: { display: false } }],
+              yAxes: [{ ticks: { beginAtZero: true } }]
+            }
+          }
+        });
+
+        $("#pred-table").DataTable({
+          pageLength: 15,
+          lengthMenu: [10, 15, 30, 50],
+          responsive: true,
+          autoWidth: false,
+          dom: "Bfrtip",
+          buttons: ["copy", "csv", "excel", "print"],
+          order: [[0, "asc"]],
+          language: {
+            search: "Buscar:",
+            lengthMenu: "Mostrar _MENU_ filas",
+            info: "Mostrando _START_ a _END_ de _TOTAL_",
+            paginate: { previous: "Anterior", next: "Siguiente" }
+          }
+        });
+      })();
     </script>
   </body>
 </html>
-<!--
-
-data: [accuracy.forEach(function(elemento,indice,array){
-                    elemento
-                    console.log('elemento ',elemento)
-                  })]
-
--->

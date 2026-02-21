@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Proyecto phishing: datos y artefactos locales
+.venv*/
+logs/
+archivos/
+*.mbox
+*.h5
+
+# Artefactos de ejecucion
+__pycache__/
+*.pyc
+*.pyo

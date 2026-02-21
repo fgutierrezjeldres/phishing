@@ -52,10 +52,14 @@ class RedNeuronal:
 
         optimizer = keras.optimizers.Adam(learning_rate=0.001)  # Ajusta la tasa de aprendizaje
         model.compile(optimizer = optimizer, loss = 'binary_crossentropy', metrics = ['accuracy'])
-        model.summary()
+        # Evita salida a consola en entornos Flask/Windows con stdout no interactivo.
+        try:
+            model.summary(print_fn=lambda *args, **kwargs: None)
+        except Exception:
+            pass
         
         #entrenamos los resultados
-        history = model.fit(X_train, y_train, epochs=100, validation_split=0.1, verbose=2)
+        history = model.fit(X_train, y_train, epochs=100, validation_split=0.1, verbose=0)
         df = pd.DataFrame(history.history)
         data_accuracy = df[["accuracy"]] 
         data_loss = df[["loss"]]
@@ -70,10 +74,10 @@ class RedNeuronal:
         #sns.lineplot(data=df[["loss"]])
         #plt.show()
         #evaluamos la precision del modelo 
-        test_loss, test_acc = model.evaluate(X_test, y_test)
+        test_loss, test_acc = model.evaluate(X_test, y_test, verbose=0)
 
         #generamos la prediccion
-        prediccion = model.predict(X_test)
+        prediccion = model.predict(X_test, verbose=0)
         snn_predicted = np.argmax(prediccion, axis=1)
 
         #Creamos la matriz de confusión
@@ -82,10 +86,20 @@ class RedNeuronal:
         #El puntaje f1 le brinda la media armónica de precisión y recuperación. 
         # Los puntajes correspondientes a cada clase le indicarán la precisión del clasificador al clasificar los puntos de datos en esa clase en particular en comparación con todas las demás clases.
         #El soporte es el número de muestras de la respuesta verdadera que se encuentran en esa clase.
-        snn_report = classification_report(np.argmax(y_test, axis=1), snn_predicted)
+        y_true = np.argmax(y_test, axis=1)
+        snn_report = classification_report(y_true, snn_predicted, zero_division=0)
+        snn_report_dict = classification_report(y_true, snn_predicted, output_dict=True, zero_division=0)
         model.save(self.archivo_modelo, include_optimizer=False)
-        print('snn_report', snn_report)
-        return test_acc, test_loss, prediccion.tolist(), snn_cm.tolist(), snn_report, data_accuracy.values.tolist(),data_loss.values.tolist()
+        return (
+            test_acc,
+            test_loss,
+            prediccion.tolist(),
+            snn_cm.tolist(),
+            snn_report,
+            snn_report_dict,
+            data_accuracy.values.tolist(),
+            data_loss.values.tolist(),
+        )
         
 
 

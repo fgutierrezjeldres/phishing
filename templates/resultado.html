@@ -23,6 +23,16 @@
     {% set fn = cm[1][0] %}
     {% set tp = cm[1][1] %}
     {% set total = tn + fp + fn + tp %}
+    {% set ds = resultado.dataset_stats if resultado.dataset_stats else {} %}
+    {% set total_raw_ds = ds.get('total_raw', total) %}
+    {% set total_clean_ds = ds.get('total_clean', total) %}
+    {% set removed_duplicates_ds = ds.get('removed_duplicates', 0) %}
+    {% set train_count_ds = ds.get('train_count', 0) %}
+    {% set test_count_ds = ds.get('test_count', total) %}
+    {% set test_cfg_pct = ds.get('test_size_config', 0.20) * 100 %}
+    {% set train_cfg_pct = 100 - test_cfg_pct %}
+    {% set train_ratio_pct = ds.get('train_ratio', 0) * 100 %}
+    {% set test_ratio_pct = ds.get('test_ratio', 0) * 100 %}
     {% set precision_phishing = (tp / (tp + fp)) if (tp + fp) else 0 %}
     {% set recall_phishing = (tp / (tp + fn)) if (tp + fn) else 0 %}
     {% set f1_phishing = (2 * precision_phishing * recall_phishing / (precision_phishing + recall_phishing)) if (precision_phishing + recall_phishing) else 0 %}
@@ -64,7 +74,7 @@
           <p class="value">{{ '%.4f'|format(resultado.test_loss) }}</p>
         </article>
         <article class="phish-kpi ink">
-          <p class="label">Predicciones</p>
+          <p class="label">Predicciones (test)</p>
           <p class="value">{{ resultado.prediccion|length }}</p>
         </article>
         <article class="phish-kpi danger">
@@ -122,8 +132,32 @@
               <strong>{{ '%.2f'|format(error_rate * 100) }}%</strong>
             </div>
             <div class="phish-effect-item">
-              <span>Total evaluado</span>
+              <span>Total evaluado (test)</span>
               <strong>{{ total }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Total dataset crudo</span>
+              <strong>{{ total_raw_ds }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Total dataset limpio</span>
+              <strong>{{ total_clean_ds }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Duplicados removidos</span>
+              <strong>{{ removed_duplicates_ds }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Total entrenamiento</span>
+              <strong>{{ train_count_ds }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Split configurado</span>
+              <strong>{{ '%.0f'|format(train_cfg_pct) }}/{{ '%.0f'|format(test_cfg_pct) }}</strong>
+            </div>
+            <div class="phish-effect-item">
+              <span>Split real</span>
+              <strong>{{ '%.2f'|format(train_ratio_pct) }}% / {{ '%.2f'|format(test_ratio_pct) }}%</strong>
             </div>
           </div>
         </div>

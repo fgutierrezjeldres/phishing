@@ -152,6 +152,7 @@ class Inicio:
                 snn_report_dict,
                 data_accuracy,
                 data_loss,
+                dataset_stats,
             ) = red.procesar()
             objeto = Resultado(
                 test_acc,
@@ -162,6 +163,7 @@ class Inicio:
                 snn_report_dict,
                 data_accuracy,
                 data_loss,
+                dataset_stats,
             )
             logger.info("Modelo entrenado | test_acc=%.6f | test_loss=%.6f", test_acc, test_loss)
             return render_template('resultado.html', resultado=objeto)

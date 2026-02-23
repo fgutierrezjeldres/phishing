@@ -294,8 +294,11 @@ class RedNeuronal:
     def procesar(self):
         self.dataset_diagnostic = None
 
-        datos = pd.read_csv(self.archivo_dataset, sep=",")
-        datos, feature_cols, groups = self._preparar_dataset(datos)
+        datos_raw = pd.read_csv(self.archivo_dataset, sep=",")
+        total_raw = int(len(datos_raw))
+        datos, feature_cols, groups = self._preparar_dataset(datos_raw)
+        total_clean = int(len(datos))
+        removed_duplicates = int(max(0, total_raw - total_clean))
 
         X = datos[feature_cols].astype(np.float32).values
         y = datos["Phishy"].astype(np.int32).values
@@ -304,6 +307,19 @@ class RedNeuronal:
         X = scaler.fit_transform(X)
 
         X_train, X_test, y_train, y_test = self._split_train_test(X, y, groups)
+        train_count = int(len(y_train))
+        test_count = int(len(y_test))
+        total_model = int(train_count + test_count)
+        dataset_stats = {
+            "total_raw": total_raw,
+            "total_clean": total_clean,
+            "removed_duplicates": removed_duplicates,
+            "train_count": train_count,
+            "test_count": test_count,
+            "test_size_config": float(TEST_SIZE),
+            "train_ratio": float(train_count / total_model) if total_model else 0.0,
+            "test_ratio": float(test_count / total_model) if total_model else 0.0,
+        }
 
         input_dim = X_train.shape[1]
         tf.keras.utils.set_random_seed(RANDOM_STATE)
@@ -344,6 +360,7 @@ class RedNeuronal:
             "boost_candidates": [float(x) for x in CLASS_WEIGHT_BOOST_CANDIDATES],
             "calibration_metrics": mejor_config["metricas_cal"],
         }
+        snn_report_dict["dataset"] = dataset_stats
 
         if self.dataset_diagnostic:
             snn_report = self.dataset_diagnostic + "\n\n" + snn_report
@@ -367,4 +384,5 @@ class RedNeuronal:
             snn_report_dict,
             data_accuracy.values.tolist(),
             data_loss.values.tolist(),
+            dataset_stats,
         )

@@ -30,6 +30,55 @@ class RedNeuronal:
         else:
             self.dataset_diagnostic = texto
 
+    def _normalizar_columna_phishy(self, serie):
+        normalizados = serie.astype(str).str.strip().str.lower()
+        mapping = {
+            "phishing": 1,
+            "phish": 1,
+            "spam": 1,
+            "malicious": 1,
+            "fraud": 1,
+            "true": 1,
+            "t": 1,
+            "yes": 1,
+            "y": 1,
+            "si": 1,
+            "1": 1,
+            "ham": 0,
+            "legit": 0,
+            "legitimate": 0,
+            "normal": 0,
+            "safe": 0,
+            "nophishing": 0,
+            "no_phishing": 0,
+            "no-phishing": 0,
+            "not_phishing": 0,
+            "false": 0,
+            "f": 0,
+            "no": 0,
+            "n": 0,
+            "0": 0,
+        }
+        mapped = normalizados.map(mapping)
+        numeric = pd.to_numeric(serie, errors="coerce")
+        phishy = mapped.where(mapped.notna(), numeric)
+
+        invalid_mask = phishy.isna()
+        if invalid_mask.any():
+            invalidos = sorted({str(v).strip() for v in serie[invalid_mask].unique().tolist() if pd.notna(v)})
+            muestra = ", ".join(invalidos[:6]) if invalidos else "valores vacios"
+            raise ValueError(
+                "La columna 'Phishy' contiene valores no reconocidos. "
+                f"Ejemplos: {muestra}. Usa solo 0/1 o etiquetas equivalentes conocidas."
+            )
+
+        phishy = phishy.astype(int)
+        etiquetas = set(phishy.unique().tolist())
+        if not etiquetas.issubset({0, 1}):
+            raise ValueError("La columna 'Phishy' solo puede contener 0 o 1.")
+
+        return phishy
+
     def _build_model(self, input_dim):
         model = keras.models.Sequential(
             [
@@ -200,6 +249,7 @@ class RedNeuronal:
             raise ValueError("El dataset no contiene la columna obligatoria 'Phishy'.")
 
         datos = datos.copy()
+        datos["Phishy"] = self._normalizar_columna_phishy(datos["Phishy"])
         meta_cols = []
         groups = None
 
@@ -218,15 +268,6 @@ class RedNeuronal:
             raise ValueError("El dataset no contiene columnas de caracteristicas.")
 
         datos[feature_cols] = datos[feature_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0)
-        datos["Phishy"] = pd.to_numeric(datos["Phishy"], errors="coerce")
-
-        if datos["Phishy"].isna().any():
-            raise ValueError("La columna 'Phishy' contiene valores no numericos.")
-
-        datos["Phishy"] = datos["Phishy"].astype(int)
-        etiquetas = set(datos["Phishy"].unique().tolist())
-        if not etiquetas.issubset({0, 1}):
-            raise ValueError("La columna 'Phishy' solo puede contener 0 o 1.")
 
         # Diagnostico de superposicion de clases para exactamente los mismos features.
         conflictos = datos.groupby(feature_cols)["Phishy"].nunique()

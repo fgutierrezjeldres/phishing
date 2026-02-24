@@ -60,9 +60,42 @@ GMAIL_RE = re.compile(r"\bgmail(?:\.com)?\b")
 OUTLOOK_RE = re.compile(r"\boutlook(?:\.com)?\b")
 SCRIPT_FALLBACK_RE = re.compile(r"<\s*script\b|javascript\s*:", re.IGNORECASE)
 
+# Umbrales para mantener el dataset binario (0/1) con criterios de riesgo.
+URL_COUNT_SUSPICIOUS_MIN = 2
+URL_AVG_LEN_SUSPICIOUS_MIN = 23.0
+URL_MAX_SUBDOMAINS_SUSPICIOUS_MIN = 2
+URL_DIGIT_RATIO_SUSPICIOUS_MIN = 0.03
+URL_SUSPICIOUS_CHARS_SUSPICIOUS_MIN = 2
+URL_EXTERNAL_RATIO_SUSPICIOUS_MIN = 0.70
+
 
 def _a_flag(valor):
     return constantes.VERDADERO if valor else constantes.FALSO
+
+
+def _a_flag_num_ge(valor, umbral):
+    try:
+        return _a_flag(float(valor) >= float(umbral))
+    except (TypeError, ValueError):
+        return constantes.FALSO
+
+
+def _normalizar_valor_binario(valor):
+    if isinstance(valor, bool):
+        return _a_flag(valor)
+    if valor is None:
+        return constantes.FALSO
+    if isinstance(valor, (int, float)):
+        return _a_flag(float(valor) > 0.0)
+    texto = str(valor).strip().lower()
+    if texto in {"1", "true", "t", "yes", "y", "si"}:
+        return constantes.VERDADERO
+    if texto in {"0", "false", "f", "no", "n", ""}:
+        return constantes.FALSO
+    try:
+        return _a_flag(float(texto) > 0.0)
+    except (TypeError, ValueError):
+        return constantes.FALSO
 
 
 def _get_mensaje_cache(mensaje):
@@ -185,19 +218,16 @@ class Dominio(Buscador):
         return 'Contador De Dominio'
         
     def getBuscador(self, mensaje):
-        for url in utilidades.getUrl_Datos(mensaje):
-            parsed = urlparse(url)
-            host = parsed.hostname
-            if not host:
-                continue
+        dominios = set()
+        for _, host in _urls_validas(mensaje):
             try:
                 ipaddress.ip_address(host)
                 continue
             except ValueError:
                 pass
             if HOST_WITH_TLD_RE.search(host):
-                return constantes.VERDADERO
-        return constantes.FALSO
+                dominios.add(host)
+        return _a_flag(len(dominios) >= 2)
 
 class Link(Buscador):
     def getBuscadorTitulo(self):
@@ -236,7 +266,7 @@ class ActionWord(Buscador):
     def getBuscadorTitulo(self):
         return 'Llamada de Accion'
     
-    def getBuscador(self, mensaje, umbral = 1):
+    def getBuscador(self, mensaje, umbral = 2):
         correo = _texto_correo(mensaje)
         retorno = sum(1 for palabra_re in ACTION_WORD_RES if palabra_re.search(correo))
         try:
@@ -292,7 +322,7 @@ class NumeroURL(Buscador):
         return "Num URL"
 
     def getBuscador(self, mensaje):
-        return len(_urls_validas(mensaje))
+        return _a_flag_num_ge(len(_urls_validas(mensaje)), URL_COUNT_SUSPICIOUS_MIN)
 
 
 class PromedioLongitudURL(Buscador):
@@ -302,9 +332,9 @@ class PromedioLongitudURL(Buscador):
     def getBuscador(self, mensaje):
         urls = _urls_validas(mensaje)
         if not urls:
-            return 0.0
+            return constantes.FALSO
         promedio = sum(len(url) for url, _ in urls) / len(urls)
-        return round(float(promedio), 4)
+        return _a_flag_num_ge(promedio, URL_AVG_LEN_SUSPICIOUS_MIN)
 
 
 class MaxSubdominiosURL(Buscador):
@@ -322,7 +352,7 @@ class MaxSubdominiosURL(Buscador):
             partes = host.split(".")
             subdominios = max(0, len(partes) - 2)
             maximo = max(maximo, subdominios)
-        return maximo
+        return _a_flag_num_ge(maximo, URL_MAX_SUBDOMAINS_SUSPICIOUS_MIN)
 
 
 class RatioDigitosURL(Buscador):
@@ -332,12 +362,13 @@ class RatioDigitosURL(Buscador):
     def getBuscador(self, mensaje):
         urls = _urls_validas(mensaje)
         if not urls:
-            return 0.0
+            return constantes.FALSO
         cadena = "".join(url for url, _ in urls)
         if not cadena:
-            return 0.0
+            return constantes.FALSO
         digitos = sum(1 for c in cadena if c.isdigit())
-        return round(_ratio_seguro(digitos, len(cadena)), 4)
+        ratio = _ratio_seguro(digitos, len(cadena))
+        return _a_flag_num_ge(ratio, URL_DIGIT_RATIO_SUSPICIOUS_MIN)
 
 
 class NumCaracteresSospechososURL(Buscador):
@@ -347,9 +378,10 @@ class NumCaracteresSospechososURL(Buscador):
     def getBuscador(self, mensaje):
         urls = _urls_validas(mensaje)
         if not urls:
-            return 0
+            return constantes.FALSO
         sospechosos = "@%-_=&?"
-        return sum(sum(1 for c in url if c in sospechosos) for url, _ in urls)
+        total = sum(sum(1 for c in url if c in sospechosos) for url, _ in urls)
+        return _a_flag_num_ge(total, URL_SUSPICIOUS_CHARS_SUSPICIOUS_MIN)
 
 
 class RatioURLExternas(Buscador):
@@ -360,9 +392,10 @@ class RatioURLExternas(Buscador):
         dominio_from = _dominio_from(mensaje)
         urls = _urls_validas(mensaje)
         if not dominio_from or not urls:
-            return 0.0
+            return constantes.FALSO
         externos = sum(1 for _, host in urls if not _host_pertenece_a_dominio(host, dominio_from))
-        return round(_ratio_seguro(externos, len(urls)), 4)
+        ratio = _ratio_seguro(externos, len(urls))
+        return _a_flag_num_ge(ratio, URL_EXTERNAL_RATIO_SUSPICIOUS_MIN)
 
 
 class MismatchReplyToFrom(Buscador):
@@ -478,11 +511,9 @@ BUSCADORES = (
     Link(),
     JavaScript(),
     ActionWord(),
-    Paypal(),
     Bank(),
     Account(),
     Reenvio(),
-    URL(),
     NumeroURL(),
     PromedioLongitudURL(),
     MaxSubdominiosURL(),
@@ -493,11 +524,7 @@ BUSCADORES = (
     IPEnURL(),
     Multipart(),
     ArrobaEnURL(),
-    ArchivoAdjunto(),
     ContenidoHTML(),
-    Gmail(),
-    Outlook(),
-    Flash(),
     Hexadecimal(),
     LinkImage(),
 )
@@ -526,6 +553,10 @@ class Pishing:
                 caracteristicas = {
                     titulo: buscador_fn(mensaje)
                     for titulo, buscador_fn in BUSCADORES_COMPILED
+                }
+                caracteristicas = {
+                    titulo: _normalizar_valor_binario(valor)
+                    for titulo, valor in caracteristicas.items()
                 }
                 try:
                     caracteristicas["MsgHash"] = hashlib.sha1(mensaje.as_bytes()).hexdigest()
